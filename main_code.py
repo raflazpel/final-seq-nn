@@ -1,3 +1,4 @@
+# Import needed packages
 import numpy as np
 import random
 from collections import deque
@@ -12,6 +13,9 @@ import matplotlib.pyplot as plt
 
 
 class BitcoinPredictorPipeline:
+    """ This class represents a whole criptocurrency price predictor. Parameters like currency,
+     length of the sequence used or number of epochs in training can be fine-tuned"""
+
     def __init__(self, past_length=40, future_distance=2):
         self.past_length = past_length
         self.future_distance = future_distance
@@ -22,12 +26,14 @@ class BitcoinPredictorPipeline:
         self.test_y = None
         self.model = None
 
-    def download_data(self, criptocoin='BTC', currency='EUR'):
+    def download_data(self, criptocoin='BTC', currency='USD'):
         # Alpha Vantage API
         api_key = "J41D51QYZT0JLZ99"
+        # This API outputs a dataframe with the open, low, high and close values in the "market" currency
+        # daily for the whole historical record. Also gives same values for USD and the volume and market capitalization
+        # in USD.
         cc = CryptoCurrencies(key=api_key, output_format='pandas')
-        data, meta_data = cc.get_digital_currency_daily(symbol=criptocoin, market=currency)
-        data['date'] = data.index
+        data, _ = cc.get_digital_currency_daily(symbol=criptocoin, market=currency)
 
         data = data.rename(columns={"3a. low (EUR)": "low",
                                     "2a. high (EUR)": "high",
@@ -153,8 +159,10 @@ class BitcoinPredictorPipeline:
         plt.legend(['Train', 'Validation'], loc='upper left')
         plt.show()
 
-
+# Instantiate the class
 pipeline = BitcoinPredictorPipeline(40, 2)
+
+# Download the data
 pipeline.download_data()
 pipeline.preprocess_basic()
 print("Training records: %s" % len(pipeline.train_x))
