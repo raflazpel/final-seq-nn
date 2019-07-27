@@ -40,14 +40,6 @@ from keras.optimizers import Adam
 from alpha_vantage.cryptocurrencies import CryptoCurrencies
 import matplotlib.pyplot as plt
 
-"""**Model parameters**
-
-For data processing, the following parameters are available:
-- DEPTH:  Historical values to use for prediction
-- PERIOD: The model will predict the future currency value in t+x where s is this parameter
-- RATIO_SYMBOL: The crypto currency value to predict (ex.  BTC)
-- RATIO_MARKET: The fiat currency to use for prediction (ex EUR)
-"""
 class Bitcoin_predictor_pipeline:
     def __init__(self, past_length = 40, future_distance = 2):
         self.past_length = past_length
@@ -145,15 +137,15 @@ class Bitcoin_predictor_pipeline:
 
     def build_model(self):
         model = Sequential()
-        model.add(CuDNNLSTM(128, input_shape=(pipeline.train_x.shape[1:]), return_sequences=True))
+        model.add(LSTM(128, input_shape=(pipeline.train_x.shape[1:]), return_sequences=True))
         model.add(Dropout(0.2))
         model.add(BatchNormalization())  # normalizes activation outputs
 
-        model.add(CuDNNLSTM(128, return_sequences=True))
+        model.add(LSTM(128, return_sequences=True))
         model.add(Dropout(0.1))
         model.add(BatchNormalization())
 
-        model.add(CuDNNLSTM(128))
+        model.add(LSTM(128))
         model.add(Dropout(0.2))
         model.add(BatchNormalization())
 
@@ -177,16 +169,16 @@ class Bitcoin_predictor_pipeline:
     def train_model(self, batch_size = 64, epochs = 5):
         NAME = f"{self.past_length}-SEQ-{self.future_distance}-PRED-{int(time.time())}"
         tensorboard = TensorBoard(log_dir="logs/{}".format(NAME))
-        filepath = "RNN_Final-{epoch:02d}-{val_acc:.3f}"
-        checkpoint = ModelCheckpoint(
-            "models/{}.model".format(filepath, monitor='val_acc', verbose=1, save_best_only=True,
-                                     mode='max'))  # saves only the best ones
+        filepath = "RNN_Final-{epoch:02d}-{mse:.3f}"
+        #checkpoint = ModelCheckpoint(
+        #    "models/{}.model".format(filepath, monitor='mse', verbose=1, save_best_only=True,
+        #                             mode='max'))  # saves only the best ones
         history = self.model.fit(
             self.train_x, self.train_y,
             batch_size=batch_size,
             epochs=epochs,
             validation_data=(self.test_x, self.test_y),
-            callbacks=[tensorboard, checkpoint])
+            callbacks=[tensorboard])
         return history
 
     def evaluate_visualize_model(self, history):
@@ -201,15 +193,6 @@ class Bitcoin_predictor_pipeline:
         - Accuracy on both train and validation sets
         - Moss on train and validation sets
         """
-
-        # Accuracy per epoch
-        plt.plot(history.history['mse'])
-        plt.plot(history.history['mape'])
-        plt.title('Accuracy per epoch')
-        plt.ylabel('Accuracy')
-        plt.xlabel('Epoch')
-        plt.legend(['Train', 'Validation'], loc='upper left')
-        plt.show()
 
         # Loss per epoch
         plt.plot(history.history['loss'])
